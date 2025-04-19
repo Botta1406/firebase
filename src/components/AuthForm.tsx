@@ -1,8 +1,13 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn as nextAuthSignIn } from 'next-auth/react';
+import { auth } from '@/lib/firebase'; // 🔁 adjust your path
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+} from 'firebase/auth';
 
 type AuthFormProps = {
     type: 'login' | 'register';
@@ -14,39 +19,16 @@ export default function AuthForm({ type }: AuthFormProps) {
     const router = useRouter();
     const [error, setError] = useState('');
 
-    // Function to handle OAuth login
-    const handleOAuthLogin = async (provider: 'google' | 'github') => {
-        try {
-            await signIn(provider, {
-                callbackUrl: '/',
-                ...(provider === 'google' && {
-                    prompt: 'consent',
-                    screen_hint: 'signup',
-                }),
-            });
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                console.error('OAuth login error:', err.message);
-            } else {
-                console.error('OAuth login error:', err);
-            }
-        }
-    };
-
     const handleSubmit = async () => {
         try {
             if (type === 'register') {
-                // Your register logic here (e.g., using Firebase)
+                await createUserWithEmailAndPassword(auth, email, password);
             } else {
-                // Your login logic here (e.g., using Firebase)
+                await signInWithEmailAndPassword(auth, email, password);
             }
             router.push('/');
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError('An unknown error occurred');
-            }
+        } catch (err: any) {
+            setError(err.message || 'Something went wrong');
         }
     };
 
@@ -71,8 +53,6 @@ export default function AuthForm({ type }: AuthFormProps) {
             <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
                 {type === 'login' ? 'Login' : 'Register'}
             </button>
-
-
         </div>
     );
 }

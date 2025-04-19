@@ -5,6 +5,7 @@ import type { NextAuthOptions } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 
+// NextAuth Options
 export const authOptions: NextAuthOptions = {
     providers: [
         GoogleProvider({
@@ -19,29 +20,22 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async jwt({ token, account, profile }) {
             if (account && profile) {
-                token.accessToken = account.access_token;
+                // Type assertion and safe checks to avoid unknown type error
+                token.accessToken = account.access_token as string;
                 token.email = profile.email as string;
 
-                // Safe check for name
-                if ('name' in profile) {
-                    token.name = profile.name as string;
-                } else if ('login' in profile) {
-                    token.name = (profile as any).login;
-                }
+                // Safe check for profile name, ensuring it's a string
+                token.name = ('name' in profile ? profile.name : (profile as any).login) as string;
 
-                // Safe check for image/avatar
-                if ('picture' in profile) {
-                    token.picture = (profile as any).picture;
-                } else if ('avatar_url' in profile) {
-                    token.picture = (profile as any).avatar_url;
-                }
+                // Safe check for profile picture, ensuring it's a string
+                token.picture = ('picture' in profile ? (profile as any).picture : (profile as any).avatar_url) as string;
             }
             return token;
         },
 
         async session({ session, token }) {
-            // Type assertion to avoid TS18048
             if (session.user) {
+                // Ensure that token values are assigned correctly
                 session.user.email = token.email as string;
                 session.user.name = token.name as string;
                 session.user.image = token.picture as string;
@@ -60,4 +54,6 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
+
+// Export the handler for both GET and POST requests
 export { handler as GET, handler as POST };
